@@ -27,6 +27,18 @@ class union_find:
     def getKeys(self):
         return self.data.keys()
     
+    def get_largest_subtree(self):
+        max_var = 0
+        max_key = 0
+        for subtree_key in self.data:
+            cur = self.data[subtree_key][0].number_of_nodes()
+            
+            if (cur >= max_var):
+                max_var = cur
+                max_key = subtree_key
+        
+        return subtree_key
+    
     def get_subtree_from_key(self, key):
         return self.data[key]
         

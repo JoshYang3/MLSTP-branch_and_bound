@@ -39,11 +39,12 @@ def load_instances(file_path: str) -> list[list[list]]:
     """
     instances = []
     with open(file_path, 'r') as f:
-        reader = csv.reader(f, delimiter=' ', skipinitialspace=True)
+        reader = csv.reader(f, delimiter=' ')
         
         num_instances = next(reader)
         for instance in range(int(num_instances[0])):
-            vertices, edges = next(reader)
+            cur = next(reader)
+            vertices, edges = cur[:2]
             current_instance = [[vertices, edges]]
             for i in range(int(edges)):
                 current_instance.append(next(reader))
@@ -127,18 +128,33 @@ def maximally_leafy_forest(G: Type[nx.Graph]) -> Type[union_find]:
 
 def combine_forest(F: Type[union_find], G: Type[nx.Graph]) -> Type[nx.Graph]:
     
-    root_tree = F.get_subtree_from_key(list(F.getKeys())[0])[0]
+    root_key = F.get_largest_subtree()
+    root_tree = F.get_subtree_from_key(root_key)[0]
     
-    for subtree in list(F.getKeys())[1:]:
+    #TODO: FIX
+    
+    for subtree in list(F.getKeys()):
+        if (subtree == root_key):
+            continue
+        
+        flag = False
+        
         for node in F.get_subtree_from_key(subtree)[0].nodes:
+            if (flag):
+                break
             for check_node in root_tree.nodes:
                 if G.has_edge(node, check_node) or G.has_edge(check_node, node):
                     F.merge(check_node, node, root1=check_node, root2=node)
+                    flag = True
+                    break
+                
+        if (flag == False):
+            print("subtrees not merged!! This is an error")
     
     return F.get_subtree_from_key(list(F.getKeys())[0])[0]
     
 
-def solve_instance(instance, draw=True):
+def solve_instance(instance, draw=False, debug=False):
     
     G = nx.Graph()
     
@@ -153,6 +169,12 @@ def solve_instance(instance, draw=True):
     BFS_leaves = leaf_count(BFS_Tree)
     
     F = maximally_leafy_forest(G)
+    
+    if debug:
+        for tree_key in F.getKeys():
+            nx.draw_networkx(F.get_subtree_from_key(tree_key)[0])
+            plt.show()
+    
     F_tree = combine_forest(F, G)
     F_tree_leaves = leaf_count(F_tree)
     
@@ -169,32 +191,58 @@ def solve_instance(instance, draw=True):
         return (BFS_Tree, BFS_leaves)
     
 
-def run_instances(instances, file_name="Solved.out"):
-    for instance in instances:
+def run_instances(instances, file_name="all-solved.out"):
+    for i, instance in enumerate(instances):
         
-        T, leaves = solve_instance(instance)
-        
-        outlist = []
-        
-        head = [leaves, 0]
-        
-        for edge in T.edges:
-            outlist.append(list(map(int, edge)))
-            head[1] += 1
+        print("Start instance: {}".format(i))
+        try:
+            T, leaves = solve_instance(instance)
             
-        outlist = sorted(outlist, key=lambda x: x[0])
+            outlist = []
+            
+            head = [leaves, 0]
+            
+            for edge in T.edges:
+                outlist.append(list(map(int, edge)))
+                head[1] += 1
+                
+            outlist = sorted(outlist, key=lambda x: x[0])
+            
+            outlist = [head] + outlist
+            
+            with open(file_name, "a", newline='') as f:
+               writer = csv.writer(f)
+               
+               writer.writerows(outlist)
+
+        except (KeyError):
+            print("Error with instance: {}".format(i))
+            exit(1)
         
-        outlist = [head] + outlist
-        
-        with open(file_name, "a", newline='') as f:
-           writer = csv.writer(f)
-           
-           writer.writerows(outlist)
+        print("Finished instance: {}".format(i))
     
+    
+def check_instances(instances) -> list:
+    
+    instance_out = []
+    
+    for i, instance in enumerate(instances):
+        G = nx.Graph()
+        
+        G.add_edges_from(instance[1:])
+        
+        if (nx.is_connected(G)):
+            instance_out.append(instance)
+        else:
+            print("Failure on instance #{}".format(i))
+    
+    return instance_out
 
 if __name__=="__main__":
     
-    instances = load_instances(os.path.join(os.getcwd(), "Hard.in"))
+    instances = load_instances(os.path.join(os.getcwd(), "all-hard.txt"))
+    
+    instances = check_instances(instances)
     
     run_instances(instances)
     
