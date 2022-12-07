@@ -126,30 +126,42 @@ def maximally_leafy_forest(G: Type[nx.Graph]) -> Type[union_find]:
     
     return Subtrees
 
-def combine_forest(F: Type[union_find], G: Type[nx.Graph]) -> Type[nx.Graph]:
+def combine_forest(F: Type[union_find], G: Type[nx.Graph], debug=True) -> Type[nx.Graph]:
+    #TODO: FIX
     
     root_key = F.get_largest_subtree()
     root_tree = F.get_subtree_from_key(root_key)[0]
+     
+    unmerged = True
+    unmerged_key = None
     
-    #TODO: FIX
-    
-    for subtree in list(F.getKeys()):
-        if (subtree == root_key):
-            continue
-        
-        flag = False
-        
-        for node in F.get_subtree_from_key(subtree)[0].nodes:
-            if (flag):
-                break
-            for check_node in root_tree.nodes:
-                if G.has_edge(node, check_node) or G.has_edge(check_node, node):
-                    F.merge(check_node, node, root1=check_node, root2=node)
-                    flag = True
+    while unmerged:
+                          
+        for subtree in list(F.getKeys()):
+            if (subtree == root_key):
+                continue
+            
+            flag = False
+            
+            for node in F.get_subtree_from_key(subtree)[0].nodes:
+                if (flag):
                     break
-                
-        if (flag == False):
-            print("subtrees not merged!! This is an error")
+                for check_node in root_tree.nodes:
+                    if G.has_edge(node, check_node) or G.has_edge(check_node, node):
+                        F.merge(check_node, node, root1=check_node, root2=node)
+                        flag = True
+                        break
+                    
+            if (flag == False):
+                unmerged = True
+                unmerged_key = subtree
+        
+        if len(list(F.getKeys())) <= 1:
+            unmerged = False
+        
+        if unmerged:
+            root_key = unmerged_key
+            root_tree = F.get_subtree_from_key(root_key)[0]
     
     return F.get_subtree_from_key(list(F.getKeys())[0])[0]
     
@@ -234,7 +246,7 @@ def check_instances(instances) -> list:
         if (nx.is_connected(G)):
             instance_out.append(instance)
         else:
-            print("Failure on instance #{}".format(i))
+            print("Failure to load instance #{}".format(i))
     
     return instance_out
 

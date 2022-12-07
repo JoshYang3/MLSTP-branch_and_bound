@@ -37,7 +37,7 @@ class union_find:
                 max_var = cur
                 max_key = subtree_key
         
-        return subtree_key
+        return max_key
     
     def get_subtree_from_key(self, key):
         return self.data[key]
